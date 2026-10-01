@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Swing Man 3D</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101a2b;color:white;font-family:system-ui;overflow:hidden}#game{position:fixed;inset:0}canvas{display:block}#hud{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none;text-shadow:0 2px 4px #000}#title{font-weight:900;font-size:20px;color:#ffd166}#msg{font-size:13px;text-align:right}#controls{position:fixed;bottom:18px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}.pad{display:grid;grid-template-columns:55px 55px 55px;grid-template-rows:55px 55px;gap:5px;pointer-events:auto}.pad button,.actions button{background:#203652dd;border:2px solid #eaf4ff;color:white;border-radius:13px;font-size:22px;font-weight:bold;touch-action:none;box-shadow:0 3px 0 #101a2b}.pad .up{grid-column:2}.pad .left{grid-column:1;grid-row:2}.pad .down{grid-column:2;grid-row:2}.pad .right{grid-column:3;grid-row:2}.actions{display:flex;gap:9px;pointer-events:auto}.actions button{width:65px;height:65px;border-radius:50%;font-size:15px;background:#8a4ed0dd}.actions .attack{background:#b64b3ddd}.tip{position:fixed;bottom:150px;left:0;right:0;text-align:center;font-size:12px;color:#e6f2ff;text-shadow:0 2px 3px #000;pointer-events:none}@media(min-width:700px){.pad button,.actions button{opacity:.78}}
+</style></head><body><div id="game"></div><div id="hud"><div><div id="title">⚔ SWING MAN 3D</div><div>🪙 <span id="coins">0</span>　❤️ <span id="hp">3</span></div></div><div id="msg">BETA • Hindernis-Parcours<br>Erreiche die goldene Plattform!</div></div><div class="tip">W A S D / Pfeiltasten · Leertaste springen · X angreifen</div><div id="controls"><div class="pad"><button class="up" data-key="forward">▲</button><button class="left" data-key="left">◀</button><button class="down" data-key="back">▼</button><button class="right" data-key="right">▶</button></div><div class="actions"><button data-key="jump">SPRING</button><button class="attack" data-key="attack">KATANA</button></div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x8bd7f0);scene.fog=new THREE.Fog(0x8bd7f0,22,65);
+const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.1,100);camera.position.set(0,7,12);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.querySelector('#game').appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x50704a,2));const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(-5,12,8);sun.castShadow=true;scene.add(sun);
+const mat=(color,roughness=.85)=>new THREE.MeshStandardMaterial({color,roughness});
+const grass=mat(0x4fbd65),dirt=mat(0x986443),dark=mat(0x263653),skin=mat(0xf1c7a0),gold=mat(0xffce4a),blade=mat(0xd8f5ff,.3),brown=mat(0x98633c);
+function box(w,h,d,m,x,y,z,parent=scene){let o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+const floor=box(28,1,36,grass,0,-.55,-7);box(28,.8,36,dirt,0,-1.35,-7);
+for(let i=0;i<18;i++){let x=-13+Math.random()*26,z=-22+Math.random()*30;let rock=box(.35+Math.random()*.5,.3,.4,mat(0x329a55),x,.1,z);rock.rotation.y=Math.random()*3}
+const platforms=[];function platform(x,y,z,w,d){box(w,.5,d,dirt,x,y-.35,z);box(w,.16,d,grass,x,y-.04,z);platforms.push({x,y,z,w,d})}
+platform(0,.2,-5,5,4);platform(-4,1.1,-10,3,3);platform(2,2,-14,3,3);platform(6,1,-19,4,4);platform(-2,2.7,-23,4,3);
+const goal=box(2,.25,2,gold,0,3.05,-23);goal.material=mat(0xffd44f);
+for(let i=0;i<12;i++){let a=i*Math.PI/6;let orb=new THREE.Mesh(new THREE.SphereGeometry(.16,12,10),gold);orb.position.set(Math.cos(a)*.8,3.5, -23+Math.sin(a)*.8);scene.add(orb)}
+// low-poly avatar, scarf and katana on back
+const hero=new THREE.Group();scene.add(hero);
+box(.8,.85,.55,dark,0,.78,0,hero);box(.75,.55,.65,skin,0,1.48,0,hero);box(.9,.16,.75,gold,0,1.78,0,hero);box(.12,.16,.07,dark,-.18,1.52,.34,hero);box(.12,.16,.07,dark,.18,1.52,.34,hero);
+box(.28,.6,.3,dark,-.25,.12,0,hero);box(.28,.6,.3,dark,.25,.12,0,hero);box(.22,.55,.25,skin,-.57,.83,0,hero);box(.22,.55,.25,skin,.57,.83,0,hero);
+// katana diagonal on back: dark sheath + pale blade
+let sheath=box(.16,1.2,.18,brown,.34,1.18,-.38,hero);sheath.rotation.z=-.48;let katana=box(.09,1.15,.1,blade,.34,1.2,-.49,hero);katana.rotation.z=-.48;box(.23,.12,.2,gold,.1,.62,-.4,hero);
+const enemy=new THREE.Group();scene.add(enemy);box(.75,.9,.6,mat(0xb84e73),0,.65,0,enemy);box(.7,.5,.65,mat(0xf1b8a1),0,1.35,0,enemy);box(.12,.12,.08,dark,-.16,1.4,.34,enemy);box(.12,.12,.08,dark,.16,1.4,.34,enemy);enemy.position.set(2,0,-5);
+const keys={};let coins=0,hp=3,vy=0,onGround=true,attackTimer=0,hitCooldown=0,won=false;const pos=hero.position;
+function press(k,v){keys[k]=v}
+document.querySelectorAll('[data-key]').forEach(b=>{let k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();press(k,true)});for(let ev of ['pointerup','pointercancel','pointerleave'])b.addEventListener(ev,()=>press(k,false))});
+addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.forward=true;if(k==='s'||k==='arrowdown')keys.back=true;if(k==='a'||k==='arrowleft')keys.left=true;if(k==='d'||k==='arrowright')keys.right=true;if(k===' '&&!e.repeat)keys.jump=true;if(k==='x')keys.attack=true});
+addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(k==='w'||k==='arrowup')keys.forward=false;if(k==='s'||k==='arrowdown')keys.back=false;if(k==='a'||k==='arrowleft')keys.left=false;if(k==='d'||k==='arrowright')keys.right=false;if(k===' ')keys.jump=false;if(k==='x')keys.attack=false});
+function update(){requestAnimationFrame(update);let dx=(keys.right?1:0)-(keys.left?1:0),dz=(keys.back?1:0)-(keys.forward?1:0);let len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;let speed=.105;pos.x+=dx*speed;pos.z+=dz*speed;pos.x=THREE.MathUtils.clamp(pos.x,-13,13);pos.z=THREE.MathUtils.clamp(pos.z,-25,10);if(dx||dz)hero.rotation.y=Math.atan2(dx,dz);
+if(keys.jump&&onGround){vy=.22;onGround=false}vy-=.009;pos.y+=vy;let landing=-.05;for(let p of platforms){if(pos.x>p.x-p.w/2-.35&&pos.x<p.x+p.w/2+.35&&pos.z>p.z-p.d/2-.3&&pos.z<p.z+p.d/2+.3&&pos.y>=p.y-.02&&pos.y+vy<=p.y+.12)landing=Math.max(landing,p.y)}if(pos.y<=landing){pos.y=landing;vy=0;onGround=true}if(pos.y< -4){pos.set(0,0,7);vy=0;hp=Math.max(1,hp-1);document.querySelector('#hp').textContent=hp}
+enemy.position.x=2+Math.sin(performance.now()*.001)*1.4;enemy.position.z=-5+Math.cos(performance.now()*.0007)*.8;enemy.rotation.y=Math.atan2(pos.x-enemy.position.x,pos.z-enemy.position.z);
+if(keys.attack&&attackTimer<=0){attackTimer=28;if(Math.hypot(pos.x-enemy.position.x,pos.z-enemy.position.z)<1.8){enemy.visible=false;coins+=5;document.querySelector('#coins').textContent=coins;setTimeout(()=>{enemy.visible=true},2200)}}
+if(attackTimer>0)attackTimer--;if(Math.hypot(pos.x-enemy.position.x,pos.z-enemy.position.z)<.9&&hitCooldown<=0){hp=Math.max(1,hp-1);document.querySelector('#hp').textContent=hp;hitCooldown=90}if(hitCooldown>0)hitCooldown--;
+let target=new THREE.Vector3(pos.x,2.8+pos.y,pos.z+6.5);camera.position.lerp(target,.09);camera.lookAt(pos.x,1+pos.y,pos.z-2.2);
+if(pos.z<-21&&pos.y>1.8&&!won){won=true;document.querySelector('#msg').innerHTML='🏆 Parcours geschafft!<br>Prototyp abgeschlossen';goal.material=mat(0x59ff9c)}
+renderer.render(scene,camera)}
+update();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script></body></html>
